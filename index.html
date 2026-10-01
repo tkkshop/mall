@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Jump</title>
+</head>
+<body>
+
+<script>
+//==================== Google API ====================
+const API_KEY = "AIzaSyAIlX6KGC2UeFCo7ZHXiK01_lqCJxTL4fc";
+// Worker 前缀
+const workers = [
+  "https://empty-morning-0584.carlospatron23.workers.dev",
+	"https://misty-voice-63b8.carlospatron23.workers.dev",
+	"https://frosty-mountain-839e.carlospatron23.workers.dev",
+	"https://jolly-glitter-bd61.carlospatron23.workers.dev",
+];
+
+//=====================================================
+
+// 是否手机
+function isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// 是否包含 ww
+function hasWww3() {
+    return location.href.includes("ww");
+}
+
+// 路径
+function isWwPath() {
+    return location.pathname === "/ww" || location.pathname === "/ww/";
+}
+
+function isWwPath2() {
+    return location.pathname === "/promote" || location.pathname === "/promote/";
+}
+
+// Google Safe Browsing
+async function checkGoogle(url){
+
+    const body = {
+        client:{
+            clientId:"jump-system",
+            clientVersion:"1.0"
+        },
+        threatInfo:{
+            threatTypes:[
+                "MALWARE",
+                "SOCIAL_ENGINEERING",
+                "UNWANTED_SOFTWARE",
+                "POTENTIALLY_HARMFUL_APPLICATION"
+            ],
+            platformTypes:[
+                "ANY_PLATFORM"
+            ],
+            threatEntryTypes:[
+                "URL"
+            ],
+            threatEntries:[
+                {
+                    url:url
+                }
+            ]
+        }
+    };
+
+    try{
+
+        const res = await fetch(
+            "https://safebrowsing.googleapis.com/v4/threatMatches:find?key="+API_KEY,
+            {
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify(body)
+            }
+        );
+
+        const data = await res.json();
+
+        console.log(url,data);
+
+        // 有 matches = 报红
+        return !data.matches;
+
+    }catch(e){
+
+        console.log(e);
+
+        return false;
+
+    }
+
+}
+
+// 获取可用 Worker
+async function getWorker(){
+
+    const cacheWorker = localStorage.getItem("worker");
+    if(cacheWorker){
+        if(await checkGoogle(cacheWorker)){
+            return cacheWorker;
+        }
+        localStorage.removeItem("worker");
+        localStorage.removeItem("worker_time");
+
+    }
+    let list=[...workers];
+    while(list.length>0){
+
+        const index=Math.floor(Math.random()*list.length);
+
+        const worker=list[index];
+
+        list.splice(index,1);
+
+        const ok=await checkGoogle(worker);
+
+        if(ok){
+
+            localStorage.setItem("worker",worker);
+            localStorage.setItem("worker_time",Date.now());
+
+
+            return worker;
+
+        }
+
+        
+
+    }
+
+    return null;
+
+}
+
+//==================== 开始 ====================
+
+(async()=>{
+
+    const pcUrl = await getWorker();
+
+    if(!pcUrl){
+
+        alert("没有可用Worker");
+
+        return;
+
+    }
+
+    const mobileUrl = pcUrl + "/wap";
+
+    if (hasWww3()) {
+
+        if(isMobile()){
+
+            location.href = pcUrl + "/www/";
+
+        }else{
+
+            location.href = pcUrl + "/ww/";
+
+        }
+
+    }else if(isWwPath2()){
+
+        location.href = pcUrl + "/promote/";
+
+    }else{
+
+        if(isMobile()){
+
+            location.href = mobileUrl + "/";
+
+        }else{
+
+            location.href = pcUrl;
+
+        }
+
+    }
+
+})();
+
+</script>
+
+</body>
+</html>
